@@ -12,6 +12,8 @@ GPIO.setwarnings(False)  # Ignore warning for now
 GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
 GPIO.setup(11, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
 GPIO.setup(13, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
+GPIO.setup(16, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
+GPIO.setup(18, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
 
 VIDEO_SIZE = (1072, 1072)
 
@@ -195,6 +197,8 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                         for lm_i in range(0, len(landmarks) // 2):
                             GPIO.output(13, GPIO.LOW)  # Turn off
                             GPIO.output(11, GPIO.LOW)  # Turn off
+                            GPIO.output(16, GPIO.LOW)  # Turn off
+                            GPIO.output(18, GPIO.LOW)  # Turn off
                             # 0,1 - left eye, 2,3 - right eye, 4,5 - nose tip, 6,7 - left mouth, 8,9 - right mouth
                             x, y = landmarks[lm_i * 2:lm_i * 2 + 2]
                             point = det.map_point(x, y).denormalize(frame.shape)
@@ -203,26 +207,34 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             # determine direction
                             direction = ""
                             TRESHOLD = 10
-                            if gaze_x > x:
+                            if gaze_x > x + 0.3:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'right'
-                                    GPIO.output(13, GPIO.HIGH)  # Turn on
+                                    GPIO.output(13, GPIO.HIGH)
+                                    GPIO.output(11, GPIO.HIGH) # Turn on
 
                                 elif gaze_y > y:
                                     direction = 'right-up'
+                                    GPIO.output(13, GPIO.HIGH)
+                                    GPIO.output(11, GPIO.HIGH)  # Turn on
                                 elif gaze_y < y:
                                     direction = 'right-down'
-                                    GPIO.output(13, GPIO.HIGH)  # Turn on
-                            elif gaze_x < x:
+                                    GPIO.output(13, GPIO.HIGH)
+                                    GPIO.output(11, GPIO.HIGH) # Turn on
+                            elif gaze_x < x + 0.3:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'left'
-                                    GPIO.output(11, GPIO.HIGH)  # Turn on
+                                    GPIO.output(16, GPIO.HIGH)  # Turn on
+                                    GPIO.output(18, GPIO.HIGH)
 
                                 elif gaze_y > y:
                                     direction = 'left-up'
+                                    GPIO.output(16, GPIO.HIGH)  # Turn on
+                                    GPIO.output(18, GPIO.HIGH)
                                 elif gaze_y < y:
                                     direction = 'left-down'
-                                    GPIO.output(11, GPIO.HIGH)  # Turn on
+                                    GPIO.output(16, GPIO.HIGH)  # Turn on
+                                    GPIO.output(18, GPIO.HIGH)
                             elif gaze_x == x:
                                 if gaze_y == y:
                                     direction = 'forward'
@@ -238,10 +250,10 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             cv2.circle(frame, point, 2, colors[lm_i], 2)
                     except:
                         continue
-                cv2.imshow("Lasers", frame)
-                if cv2.waitKey(1) == ord('q'):
-                    GPIO.cleanup()
-                    break
+            cv2.imshow("Lasers", frame)
+            if cv2.waitKey(1) == ord('q'):
+                GPIO.cleanup()
+                break
     except KeyboardInterrupt:
         # Cleanup GPIO on Ctrl+C
         GPIO.cleanup()
