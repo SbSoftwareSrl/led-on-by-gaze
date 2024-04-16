@@ -250,10 +250,10 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             cv2.circle(frame, point, 2, colors[lm_i], 2)
                     except:
                         continue
-            cv2.imshow("Lasers", frame)
-            if cv2.waitKey(1) == ord('q'):
-                GPIO.cleanup()
-                break
+                cv2.imshow("Lasers", frame)
+                if cv2.waitKey(1) == ord('q'):
+                    GPIO.cleanup()
+                    break
     except KeyboardInterrupt:
         # Cleanup GPIO on Ctrl+C
         GPIO.cleanup()
