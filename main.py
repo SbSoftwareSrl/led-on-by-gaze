@@ -35,7 +35,9 @@ cam.setInterleaved(False)
 cam.setPreviewNumFramesPool(20)
 cam.setFps(20)
 cam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-
+manip = pipeline.create(dai.node.ImageManip)
+manip.initialConfig.setMirror(dai.MirrorType.HORIZONTAL)
+cam.video.link(manip.inputImage)
 create_output('color', cam.video)
 
 # ImageManip that will crop the frame before sending it to the Face detection NN node
@@ -44,12 +46,6 @@ face_det_manip.initialConfig.setResize(300, 300)
 face_det_manip.setMaxOutputFrameSize(300 * 300 * 3)
 cam.preview.link(face_det_manip.inputImage)
 
-flipped_face_det_manip = pipeline.create(dai.node.ImageManip)
-flipped_face_det_manip.initialConfig.setResize(300, 300)
-flipped_face_det_manip.setMaxOutputFrameSize(300 * 300 * 3)
-face_det_manip.out.link(flipped_face_det_manip.inputImage)
-
-flipped_face_det_manip.initialConfig.setMirrorFrame(True)
 # =================[ FACE DETECTION ]=================
 
 print("Creating Face Detection Neural Network...")
@@ -61,7 +57,7 @@ face_det_nn.setBlobPath(blobconverter.from_zoo(
     version=openvino_version
 ))
 # Link Face ImageManip -> Face detection NN node
-flipped_face_det_manip.out.link(face_det_nn.input)
+face_det_manip.out.link(face_det_nn.input)
 
 create_output('detection', face_det_nn.out)
 
@@ -244,7 +240,6 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             cv2.circle(frame, point, 2, colors[lm_i], 2)
                     except:
                         continue
-                cv2.flip(frame,1)
                 cv2.imshow("Lasers", frame)
                 if cv2.waitKey(1) == ord('q'):
                     GPIO.cleanup()
