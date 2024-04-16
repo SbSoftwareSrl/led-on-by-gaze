@@ -35,9 +35,7 @@ cam.setInterleaved(False)
 cam.setPreviewNumFramesPool(20)
 cam.setFps(20)
 cam.setBoardSocket(dai.CameraBoardSocket.CAM_A)
-manip = pipeline.create(dai.node.ImageManip)
-manip.initialConfig.setMirror(dai.MirrorType.HORIZONTAL)
-cam.video.link(manip.inputImage)
+cam.setImageOrientation(dai.CameraImageOrientation.HORIZONTAL_MIRROR)
 create_output('color', cam.video)
 
 # ImageManip that will crop the frame before sending it to the Face detection NN node
@@ -207,23 +205,23 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             TRESHOLD = 10
                             if gaze_x > x:
                                 if abs(gaze_y - y) <= TRESHOLD:
-                                    direction = 'left'
-                                    GPIO.output(11, GPIO.HIGH)  # Turn on
-
-                                elif gaze_y > y:
-                                    direction = 'left-up'
-                                elif gaze_y < y:
-                                    direction = 'left-down'
-                                    GPIO.output(11, GPIO.HIGH)  # Turn on
-                            elif gaze_x < x:
-                                if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'right'
-                                    GPIO.output(13, GPIO.HIGH)  # Turn on
+                                    GPIO.output(11, GPIO.HIGH)  # Turn on
 
                                 elif gaze_y > y:
                                     direction = 'right-up'
                                 elif gaze_y < y:
                                     direction = 'right-down'
+                                    GPIO.output(11, GPIO.HIGH)  # Turn on
+                            elif gaze_x < x:
+                                if abs(gaze_y - y) <= TRESHOLD:
+                                    direction = 'left'
+                                    GPIO.output(13, GPIO.HIGH)  # Turn on
+
+                                elif gaze_y > y:
+                                    direction = 'left-up'
+                                elif gaze_y < y:
+                                    direction = 'left-down'
                                     GPIO.output(13, GPIO.HIGH)  # Turn on
                             elif gaze_x == x:
                                 if gaze_y == y:
