@@ -5,13 +5,13 @@ import depthai as dai
 import numpy as np
 from MultiMsgSync import TwoStageHostSeqSync
 from depthai_sdk.visualize.bbox import BoundingBox
-# import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
+import RPi.GPIO as GPIO  # Import Raspberry Pi GPIO library
 from time import sleep  # Import the sleep function from the time module
 
-# GPIO.setwarnings(False)  # Ignore warning for now
-# GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
-# GPIO.setup(11, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
-# GPIO.setup(13, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
+GPIO.setwarnings(False)  # Ignore warning for now
+GPIO.setmode(GPIO.BOARD)  # Use physical pin numbering
+GPIO.setup(11, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
+GPIO.setup(13, GPIO.OUT, initial=GPIO.LOW)  # Set pin 18 to be an output pin and set initial value to low (off)
 
 VIDEO_SIZE = (1072, 1072)
 
@@ -160,89 +160,91 @@ create_output('gaze', gaze_nn.out)
 # ==================================================
 
 with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
-    sync = TwoStageHostSeqSync()
+    try:
+        sync = TwoStageHostSeqSync()
 
-    queues = {}
-    # Create output queues
-    for name in ["color", "detection", "landmarks", "gaze"]:
-        queues[name] = device.getOutputQueue(name)
+        queues = {}
+        # Create output queues
+        for name in ["color", "detection", "landmarks", "gaze"]:
+            queues[name] = device.getOutputQueue(name)
 
-    while True:
-        for name, q in queues.items():
-            # Add all msgs (color frames, detections and gaze estimations) to the Sync class.
-            if q.has():
-                msg = q.get()
-                sync.add_msg(msg, name)
-                # if name == "color":
-                # cv2.imshow("video", msg.getCvFrame())
+        while True:
+            for name, q in queues.items():
+                # Add all msgs (color frames, detections and gaze estimations) to the Sync class.
+                if q.has():
+                    msg = q.get()
+                    sync.add_msg(msg, name)
+                    # if name == "color":
+                    # cv2.imshow("video", msg.getCvFrame())
 
-        msgs = sync.get_msgs()
-        if msgs is not None:
-            frame = msgs["color"].getCvFrame()
-            dets = msgs["detection"].detections
-            for i, detection in enumerate(dets):
-                try:
-                    det = BoundingBox(detection)
-                    tl, br = det.denormalize(frame.shape)
-                    cv2.rectangle(frame, tl, br, (10, 245, 10), 1)
+            msgs = sync.get_msgs()
+            if msgs is not None:
+                frame = msgs["color"].getCvFrame()
+                dets = msgs["detection"].detections
+                for i, detection in enumerate(dets):
+                    try:
+                        det = BoundingBox(detection)
+                        tl, br = det.denormalize(frame.shape)
+                        cv2.rectangle(frame, tl, br, (10, 245, 10), 1)
 
-                    gaze = np.array(msgs["gaze"][i].getFirstLayerFp16())
-                    gaze_x, gaze_y = (gaze * 100).astype(int)[:2]
+                        gaze = np.array(msgs["gaze"][i].getFirstLayerFp16())
+                        gaze_x, gaze_y = (gaze * 100).astype(int)[:2]
 
-                    landmarks = np.array(msgs["landmarks"][i].getFirstLayerFp16())
-                    colors = [(0, 127, 255), (0, 127, 255), (255, 0, 127), (127, 255, 0), (127, 255, 0)]
-                    for lm_i in range(0, len(landmarks) // 2):
-                        # 0,1 - left eye, 2,3 - right eye, 4,5 - nose tip, 6,7 - left mouth, 8,9 - right mouth
-                        x, y = landmarks[lm_i * 2:lm_i * 2 + 2]
-                        point = det.map_point(x, y).denormalize(frame.shape)
-                        arrowX = point[0] + gaze_x * 5
-                        arrowY = point[1] - gaze_y * 5
-                        # determine direction
-                        direction = ""
-                        TRESHOLD = 10
-                        if gaze_x > x:
-                            if abs(gaze_y - y) <= TRESHOLD:
-                                direction = 'left'
-                                # GPIO.output(11, GPIO.HIGH)  # Turn on
-                                # GPIO.output(13, GPIO.LOW)  # Turn off
-                            elif gaze_y > y:
-                                direction = 'left-up'
-                                # GPIO.output(11, GPIO.LOW)  # Turn off
-                                # GPIO.output(13, GPIO.LOW)  # Turn off
-                            elif gaze_y < y:
-                                direction = 'left-down'
-                                # GPIO.output(11, GPIO.HIGH)  # Turn on
-                                # GPIO.output(13, GPIO.LOW)  # Turn off
-                        elif gaze_x < x:
-                            if abs(gaze_y - y) <= TRESHOLD:
-                                direction = 'right'
-                                # GPIO.output(13, GPIO.HIGH)  # Turn on
-                                # GPIO.output(11, GPIO.LOW)  # Turn off
-                            elif gaze_y > y:
-                                direction = 'right-up'
-                                # GPIO.output(13, GPIO.LOW)  # Turn off
-                                # GPIO.output(11, GPIO.LOW)  # Turn off
-                            elif gaze_y < y:
-                                direction = 'right-down'
-                                # GPIO.output(13, GPIO.HIGH)  # Turn on
-                                # GPIO.output(11, GPIO.LOW)  # Turn off
-                        elif gaze_x == x:
-                            if gaze_y == y:
-                                direction = 'forward'
-                            elif gaze_y > y:
-                                direction = 'up'
-                            elif gaze_y < y:
-                                direction = 'down'
+                        landmarks = np.array(msgs["landmarks"][i].getFirstLayerFp16())
+                        colors = [(0, 127, 255), (0, 127, 255), (255, 0, 127), (127, 255, 0), (127, 255, 0)]
+                        for lm_i in range(0, len(landmarks) // 2):
+                            GPIO.output(13, GPIO.LOW)  # Turn off
+                            GPIO.output(11, GPIO.LOW)  # Turn off
+                            # 0,1 - left eye, 2,3 - right eye, 4,5 - nose tip, 6,7 - left mouth, 8,9 - right mouth
+                            x, y = landmarks[lm_i * 2:lm_i * 2 + 2]
+                            point = det.map_point(x, y).denormalize(frame.shape)
+                            arrowX = point[0] + gaze_x * 5
+                            arrowY = point[1] - gaze_y * 5
+                            # determine direction
+                            direction = ""
+                            TRESHOLD = 10
+                            if gaze_x > x:
+                                if abs(gaze_y - y) <= TRESHOLD:
+                                    direction = 'left'
+                                    GPIO.output(11, GPIO.HIGH)  # Turn on
 
-                        if lm_i <= 1:  # Draw arrows from left eye & right eye
-                            cv2.arrowedLine(frame, point, (arrowX, arrowY), colors[lm_i], 3)
-                            cv2.putText(frame, f'Person is looking {direction}', (30, 30), cv2.FONT_HERSHEY_SIMPLEX, 1,
-                                        (0, 0, 0), 2)
-                        cv2.circle(frame, point, 2, colors[lm_i], 2)
-                except:
-                    continue
+                                elif gaze_y > y:
+                                    direction = 'left-up'
+                                elif gaze_y < y:
+                                    direction = 'left-down'
+                                    GPIO.output(11, GPIO.HIGH)  # Turn on
+                            elif gaze_x < x:
+                                if abs(gaze_y - y) <= TRESHOLD:
+                                    direction = 'right'
+                                    GPIO.output(13, GPIO.HIGH)  # Turn on
 
-            cv2.imshow("Lasers", frame)
+                                elif gaze_y > y:
+                                    direction = 'right-up'
+                                elif gaze_y < y:
+                                    direction = 'right-down'
+                                    GPIO.output(13, GPIO.HIGH)  # Turn on
+                            elif gaze_x == x:
+                                if gaze_y == y:
+                                    direction = 'forward'
+                                elif gaze_y > y:
+                                    direction = 'up'
+                                elif gaze_y < y:
+                                    direction = 'down'
 
-        if cv2.waitKey(1) == ord('q'):
-            break
+                            if lm_i <= 1:  # Draw arrows from left eye & right eye
+                                cv2.arrowedLine(frame, point, (arrowX, arrowY), colors[lm_i], 3)
+                                cv2.putText(frame, f'Person is looking {direction}', (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                                            1, (0, 0, 0), 2)
+                            cv2.circle(frame, point, 2, colors[lm_i], 2)
+                    except:
+                        continue
+                cv2.imshow("Lasers", frame)
+                if cv2.waitKey(1) == ord('q'):
+                    GPIO.cleanup()
+                    break
+    except KeyboardInterrupt:
+        # Cleanup GPIO on Ctrl+C
+        GPIO.cleanup()
+
+
+
