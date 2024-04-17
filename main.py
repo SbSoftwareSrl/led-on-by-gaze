@@ -207,7 +207,7 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             # determine direction
                             direction = ""
                             TRESHOLD = 10
-                            if gaze_x > x + 40:
+                            if gaze_x > x + 20:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'right'
                                     GPIO.output(13, GPIO.HIGH)
@@ -221,7 +221,7 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                                     direction = 'right-down'
                                     GPIO.output(13, GPIO.HIGH)
                                     GPIO.output(11, GPIO.HIGH) # Turn on
-                            elif gaze_x < x - 40:
+                            elif gaze_x < x - 20:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'left'
                                     GPIO.output(16, GPIO.HIGH)  # Turn on
