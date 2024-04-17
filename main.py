@@ -207,7 +207,7 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                             # determine direction
                             direction = ""
                             TRESHOLD = 10
-                            if gaze_x > x + 5:
+                            if gaze_x > x + 20:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'right'
                                     GPIO.output(13, GPIO.HIGH)
@@ -221,7 +221,7 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
                                     direction = 'right-down'
                                     GPIO.output(13, GPIO.HIGH)
                                     GPIO.output(11, GPIO.HIGH) # Turn on
-                            elif gaze_x < x + 5:
+                            elif gaze_x < x + 20:
                                 if abs(gaze_y - y) <= TRESHOLD:
                                     direction = 'left'
                                     GPIO.output(16, GPIO.HIGH)  # Turn on
@@ -254,6 +254,9 @@ with dai.Device(pipeline, maxUsbSpeed=dai.UsbSpeed.HIGH) as device:
             if cv2.waitKey(1) == ord('q'):
                 GPIO.cleanup()
                 break
+        preview_frame = device.getOutputQueue().get().getCvFrame()
+        # Display the preview frame
+        cv2.imshow("Basic Camera View", preview_frame)
     except KeyboardInterrupt:
         # Cleanup GPIO on Ctrl+C
         GPIO.cleanup()
