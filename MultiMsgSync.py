@@ -51,6 +51,6 @@ class TwoStageHostSeqSync:
                         del self.msgs[rm]
                         # print(self.msgs)
 
-                return msgs # Returned synced msgs
+                    return msgs # Returned synced msgs
 
         return None # No synced msgs
