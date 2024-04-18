@@ -47,9 +47,9 @@ class TwoStageHostSeqSync:
                 # Check if all detected objects (faces) have finished gaze (age/gender) inference
                 if msgs["len"] == len(msgs["gaze"]):
                  # We have synced msgs, remove previous msgs (memory cleaning)
-                for rm in seq_remove:
-                    del self.msgs[rm]
-                    # print(self.msgs)
+                    for rm in seq_remove:
+                        del self.msgs[rm]
+                        # print(self.msgs)
 
                 return msgs # Returned synced msgs
 
